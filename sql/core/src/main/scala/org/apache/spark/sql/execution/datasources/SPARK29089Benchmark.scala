@@ -22,14 +22,15 @@ import java.util.concurrent.TimeUnit
 import com.google.common.base.Stopwatch
 import dnl.utils.text.table.TextTable
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, Path}
-
+import org.apache.hadoop.fs.{FileSystem}
 
 object SPARK29089Benchmark {
-  def main(args : Array[String]) = {
+  def main(args : Array[String]) : Unit = {
     val measurements = Seq(40, 300).flatMap { maxS3aConnections =>
       Seq(10, 20, 40, 60, 80, 100, 150, 200).flatMap { numThreads =>
+        // scalastyle:off println
         println("Running on maxConn: " + maxS3aConnections + " threads:" + numThreads)
+        // scalastyle:on println
 
         val stopWatch = new Stopwatch();
 
@@ -87,12 +88,18 @@ object SPARK29089Benchmark {
             maxS3aConnections.toString,
             numThreads.toString,
             (Math.round((flatPathsTimeMillis/100D) * 100) / 100D).toString
-          ),
+          )
         )
       }
     }.toArray
 
-    val textTable = new TextTable(Array("Type", "Max S3 Connections", "Num Threads", "Runtime(seconds)"), measurements)
+    val textTable = new TextTable(
+      Array("Type", "Max S3 Connections", "Num Threads", "Runtime(seconds)"),
+      measurements
+    )
+    textTable.setSort(0)
+    textTable.setSort(1)
+    textTable.setSort(2)
     textTable.printTable()
 
     FileSystem.printStatistics()
