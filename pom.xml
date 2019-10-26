@@ -284,6 +284,17 @@
       <artifactId>unused</artifactId>
       <version>1.0.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-aws</artifactId>
+      <version>${hadoop.version}</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.massisframework/j-text-utils -->
+    <dependency>
+      <groupId>com.massisframework</groupId>
+      <artifactId>j-text-utils</artifactId>
+      <version>0.3.4</version>
+    </dependency>
     <!--
          This is needed by the scalatest plugin, and so is declared here to be available in
          all child modules, just as scalatest is run in all children
@@ -403,7 +414,7 @@
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>14.0.1</version>
-        <scope>provided</scope>
+        <scope>compile</scope>
       </dependency>
       <dependency>
         <groupId>org.jpmml</groupId>
@@ -2995,7 +3006,7 @@
     <profile>
       <id>scala-2.12</id>
     </profile>
-    
+
     <profile>
       <id>scala-2.13</id>
       <dependencyManagement>
