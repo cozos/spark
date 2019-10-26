@@ -26,7 +26,7 @@ import org.apache.hadoop.fs.{FileSystem}
 
 object SPARK29089Benchmark {
   def main(args : Array[String]) : Unit = {
-    val measurements = Seq(40, 300).flatMap { maxS3aConnections =>
+    val measurements = Seq(40, 100, 300).flatMap { maxS3aConnections =>
       Seq(10, 20, 40, 60, 80, 100, 150, 200).flatMap { numThreads =>
         // scalastyle:off println
         println("Running on maxConn: " + maxS3aConnections + " threads:" + numThreads)
