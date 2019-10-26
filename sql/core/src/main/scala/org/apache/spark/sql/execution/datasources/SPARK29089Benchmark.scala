@@ -94,7 +94,7 @@ object SPARK29089Benchmark {
     }.toArray
 
     val textTable = new TextTable(
-      Array("Type", "Max S3 Connections", "Num Threads", "Runtime(seconds)"),
+      Array("Type", "fs.s3a.connection.maximum", "Num Threads", "Runtime(seconds)"),
       measurements
     )
     textTable.setSort(0)
@@ -1350,10 +1350,20 @@ object TestFiles {
 }
 
 object TestConf {
-    def getConf(connectionMaximum : Int): Configuration = {
+    def getConf(connectionMaximum : Int, testParquet : Boolean = false): Configuration = {
       val conf = new Configuration()
       conf.setLong("fs.s3a.connection.maximum", connectionMaximum)
       conf.setLong("fs.s3a.threads.keepalivetime", 300)
+      conf.setLong("spark.hadoop.fs.s3a.connection.maximum", connectionMaximum)
+      conf.setLong("spark.hadoop.fs.s3a.threads.keepalivetime", 300)
+
+      if (testParquet) {
+        conf.setLong("fs.s3a.readahead.range", 256)
+        conf.set("fs.s3a.input.fadvise", "random")
+        conf.setLong("spark.hadoop.fs.s3a.readahead.range", 256)
+        conf.set("spark.hadoop.fs.s3a.input.fadvise", "random")
+      }
+
       conf
     }
 }
