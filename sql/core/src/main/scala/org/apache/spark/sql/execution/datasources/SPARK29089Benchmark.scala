@@ -98,8 +98,6 @@ object SPARK29089Benchmark {
       measurements
     )
     textTable.setSort(0)
-    textTable.setSort(1)
-    textTable.setSort(2)
     textTable.printTable()
 
     FileSystem.printStatistics()
