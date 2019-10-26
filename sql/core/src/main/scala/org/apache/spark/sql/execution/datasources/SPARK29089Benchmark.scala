@@ -25,82 +25,76 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem}
 
 object SPARK29089Benchmark {
-  def main(args : Array[String]) : Unit = {
-    val measurements = Seq(40, 100, 300).flatMap { maxS3aConnections =>
-      Seq(10, 20, 40, 60, 80, 100, 150, 200).flatMap { numThreads =>
-        // scalastyle:off println
-        println("Running on maxConn: " + maxS3aConnections + " threads:" + numThreads)
-        // scalastyle:on println
+  val NUM_RUNS = 5
 
-        val stopWatch = new Stopwatch();
+  def runGlob(paths: Seq[String], conf: Configuration, numThreads: Int) : Double = {
+      val stopWatch = new Stopwatch();
 
-        stopWatch.start()
+      stopWatch.start()
+      1 to NUM_RUNS foreach { _ =>
         DataSource.checkAndGlobPathIfNecessary(
-          TestFiles.globPaths,
-          TestConf.getConf(maxS3aConnections),
+          paths,
+          conf,
           checkEmptyGlobPath = true,
           checkFilesExist = true,
           numThreads = numThreads
-        )
-        stopWatch.stop()
-        val globPathsTimeMillis = stopWatch.elapsed(TimeUnit.MILLISECONDS)
-        stopWatch.reset()
-
-        stopWatch.start()
-        DataSource.checkAndGlobPathIfNecessary(
-          TestFiles.flatPaths,
-          TestConf.getConf(maxS3aConnections),
-          checkEmptyGlobPath = true,
-          checkFilesExist = true,
-          numThreads = numThreads
-        )
-        stopWatch.stop()
-        val flatPathsTimeMillis = stopWatch.elapsed(TimeUnit.MILLISECONDS)
-        stopWatch.reset()
-
-        stopWatch.start()
-        val numFiles = DataSource.checkAndGlobPathIfNecessary(
-          TestFiles.singleGlobPath,
-          TestConf.getConf(maxS3aConnections),
-          checkEmptyGlobPath = true,
-          checkFilesExist = true,
-          numThreads = numThreads
-        ).length
-        stopWatch.stop()
-        val singleGlobPathTimeMillis = stopWatch.elapsed(TimeUnit.MILLISECONDS)
-        stopWatch.reset()
-
-        Array(
-          Array[Object](
-            "Single glob path",
-            maxS3aConnections.toString,
-            numThreads.toString,
-            (Math.round((singleGlobPathTimeMillis/100D) * 100) / 100D).toString
-          ),
-          Array[Object](
-            "Glob Paths",
-            maxS3aConnections.toString,
-            numThreads.toString,
-            (Math.round((globPathsTimeMillis/100D) * 100) / 100D).toString
-          ),
-          Array[Object](
-            "Flat Paths",
-            maxS3aConnections.toString,
-            numThreads.toString,
-            (Math.round((flatPathsTimeMillis/100D) * 100) / 100D).toString
-          )
         )
       }
-    }.toArray
+      stopWatch.stop()
 
-    val textTable = new TextTable(
-      Array("Type", "fs.s3a.connection.maximum", "Num Threads", "Runtime(seconds)"),
-      measurements
-    )
-    textTable.setSort(0)
-    textTable.printTable()
+    stopWatch.elapsed(TimeUnit.MILLISECONDS).toDouble / NUM_RUNS
+  }
 
-    FileSystem.printStatistics()
+  def main(args : Array[String]) : Unit = {
+    Seq(false, true).foreach { useParquet =>
+      // scalastyle:off println
+      println("Using Parquet Mode: " + useParquet.toString)
+      // scalastyle:on println
+
+      val measurements = Seq(48, 100, 300).flatMap { maxS3aConnections =>
+        Seq(10, 20, 40, 60, 80, 100, 150, 200).flatMap { numThreads =>
+          // scalastyle:off println
+          println("Running on maxConn: " + maxS3aConnections + " threads:" + numThreads)
+          // scalastyle:on println
+
+          val globPathsTimeMillis = runGlob(
+            paths = TestFiles.globPaths,
+            conf = TestConf.getConf(maxS3aConnections, useParquet),
+            numThreads = numThreads
+          )
+
+          val flatPathsTimeMillis = runGlob(
+            paths = TestFiles.flatPaths,
+            conf = TestConf.getConf(maxS3aConnections, useParquet),
+            numThreads = numThreads
+          )
+
+          Array(
+            Array[Object](
+              "Glob Paths",
+              maxS3aConnections.toString,
+              numThreads.toString,
+              (Math.round((globPathsTimeMillis/100D) * 100) / 100D).toString
+            ),
+            Array[Object](
+              "Flat Paths",
+              maxS3aConnections.toString,
+              numThreads.toString,
+              (Math.round((flatPathsTimeMillis/100D) * 100) / 100D).toString
+            )
+          )
+        }
+      }.toArray
+
+      val textTable = new TextTable(
+        Array("Type", "fs.s3a.connection.maximum", "Num Threads", "Runtime(seconds)"),
+        measurements
+      )
+      textTable.setSort(0)
+      textTable.printTable()
+
+      FileSystem.printStatistics()
+    }
   }
 }
 
@@ -1350,7 +1344,7 @@ object TestFiles {
 }
 
 object TestConf {
-    def getConf(connectionMaximum : Int, testParquet : Boolean = false): Configuration = {
+    def getConf(connectionMaximum : Int, testParquet : Boolean): Configuration = {
       val conf = new Configuration()
       conf.setLong("fs.s3a.connection.maximum", connectionMaximum)
       conf.setLong("fs.s3a.threads.keepalivetime", 300)
